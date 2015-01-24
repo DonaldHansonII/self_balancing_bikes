@@ -49,8 +49,12 @@ setnames(stationcap, c('station.name', 'station_capacity'),
 ########################################
 # load and clean station availability data
 ########################################
-availability <- read.delim(file = gzfile("data/availability.tsv.gz"), header = F,
-                           col.names = c("station.name", "timestamp", "interval", "bikes.available"))
+#
+# Files from the filter_availability.py script export as tsv, not tsv.gz
+#availability <- read.delim(file = gzfile("data/availability.tsv.gz"), header = F,
+availability <- read.delim(file = "data/availability.tsv", header = F,
+                       col.names = c("station.name", "timestamp", "interval", "bikes.available"))
+
 availability <- mutate(availability,
                        interval = as.POSIXct(interval, origin = "1970-01-01"),
                        rounded.interval = as.character(strftime(interval, format = "%H:%M")),
@@ -84,15 +88,19 @@ trips <- stationcap[trips, nomatch=NA] #for every row in trips, look up matching
 setnames(trips, "station.name", "start.station.name")
 
 # merge station availability into trips
-setkey(availability, station.name, ymd, rounded.interval)
+# Added 1/21/2014 -
+setnames(availability,"station.name", "start.station.name")
+# -
+setkey(availability, start.station.name, ymd, rounded.interval)
 setkey(trips, start.station.name, startymd, rounded.starttime)
-trips <- availability[trips, nomatch = NA]
-setnames(trips, c("station.name", "ymd", "rounded.interval"), c("start.station.name","startymd","rounded.starttime"))
+trips <- availability[trips, nomatch = NA, allow.cartesian=T]
+#setnames(trips, c("station.name", "ymd", "rounded.interval"), c("start.station.name","startymd","rounded.starttime"))
+setnames(trips, c("ymd", "rounded.interval"), c("startymd","rounded.starttime"))
 trips$interval <- NULL
 trips$timestamp <- NULL
 trips$is.weekday <- NULL
-setnames(trips, "is.weekday.1", "is.weekday")
-
+#setnames(trips, "is.weekday.1", "is.weekday")
+setnames(trips, "i.is.weekday", "is.weekday")
 
 ###############################################################
 # Determines bike transportations by Citibike workers, theft, #
